@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Shield, Sparkles, Smile, Meh, Frown } from "lucide-react";
 import VoiceRecorder from "../components/VoiceRecorder";
@@ -8,21 +8,21 @@ import type { Sentiment } from "../components/SentimentBadge";
 
 const INITIAL_ENTRIES: JournalEntry[] = [
   { id: "1", date: "Feb 22", time: "9:15 AM", text: "Woke up feeling really refreshed today. Had a good breakfast and went for a morning walk. The weather was perfect and I felt genuinely grateful for the little things.", sentiment: "positive", score: 0.85, encrypted: true, dayOfWeek: "Sat" },
-  { id: "2", date: "Feb 21", time: "8:30 PM", text: "Work was a bit stressful today with the deadline approaching. I managed to take a few breaks though, which helped. Need to remember to be kinder to myself during busy periods.", sentiment: "neutral", score: 0.45, encrypted: true, dayOfWeek: "Fri" },
-  { id: "3", date: "Feb 21", time: "7:00 AM", text: "Didn't sleep well last night, feeling tired and a bit anxious about the presentation today. Trying to focus on breathing exercises.", sentiment: "negative", score: 0.25, encrypted: true, dayOfWeek: "Fri" },
+  { id: "2", date: "Feb 21", time: "8:30 PM", text: "Work was a bit stressful today with the deadline approaching. I managed to take a few breaks though, which helped. Need to remember to be kinder to myself during busy periods.", sentiment: "neutral", score: 0.5, encrypted: true, dayOfWeek: "Fri" },
+  { id: "3", date: "Feb 21", time: "7:00 AM", text: "Didn't sleep well last night, feeling tired and a bit anxious about the presentation today. Trying to focus on breathing exercises.", sentiment: "negative", score: 0.15, encrypted: true, dayOfWeek: "Fri" },
   { id: "4", date: "Feb 20", time: "6:45 PM", text: "Great afternoon catching up with an old friend. We laughed so much and it reminded me how important social connections are for my wellbeing.", sentiment: "positive", score: 0.92, encrypted: true, dayOfWeek: "Thu" },
   { id: "5", date: "Feb 19", time: "9:00 PM", text: "A quiet day. Nothing particularly good or bad happened. Spent time reading and doing laundry. Sometimes ordinary days are exactly what you need.", sentiment: "neutral", score: 0.5, encrypted: true, dayOfWeek: "Wed" },
 ];
 
-const MOOD_DATA = [
-  { date: "Mon", score: 0.7, label: "Positive" },
-  { date: "Tue", score: 0.3, label: "Neutral" },
-  { date: "Wed", score: -0.2, label: "Slightly negative" },
-  { date: "Thu", score: 0.5, label: "Positive" },
-  { date: "Fri", score: 0.8, label: "Very positive" },
-  { date: "Sat", score: 0.6, label: "Positive" },
-  { date: "Sun", score: 0.9, label: "Very positive" },
-];
+const DAYS_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const getMoodLabel = (score: number): string => {
+  if (score >= 0.6) return "Very positive";
+  if (score > 0) return "Positive";
+  if (score === 0) return "Neutral";
+  if (score > -0.6) return "Negative";
+  return "Very negative";
+};
 
 type MoodSelection = "positive" | "neutral" | "negative";
 
@@ -39,9 +39,21 @@ const Index = () => {
   const [transcribedText, setTranscribedText] = useState("");
   const [selectedMood, setSelectedMood] = useState<MoodSelection | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>(INITIAL_ENTRIES);
-  const [highlightedEntryId, setHighlightedEntryId] = useState<string | null>(null);
+  const [highlightedEntryIds, setHighlightedEntryIds] = useState<string[]>([]);
   const entriesSectionRef = useRef<HTMLDivElement>(null);
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const moodData = useMemo(() => {
+    return DAYS_ORDER.map((day) => {
+      const dayEntries = entries.filter((e) => e.dayOfWeek === day);
+      if (dayEntries.length === 0) {
+        return { date: day, score: 0, label: "No record", hasEntries: false };
+      }
+      const avgScore =
+        dayEntries.reduce((sum, e) => sum + (e.score - 0.5) * 2, 0) / dayEntries.length;
+      return { date: day, score: avgScore, label: getMoodLabel(avgScore), hasEntries: true };
+    });
+  }, [entries]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -72,7 +84,7 @@ const Index = () => {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const sentiment: Sentiment = selectedMood || "neutral";
-    const scoreMap: Record<Sentiment, number> = { positive: 0.85, neutral: 0.5, negative: 0.25 };
+    const scoreMap: Record<Sentiment, number> = { positive: 0.85, neutral: 0.5, negative: 0.15 };
     const newEntry: JournalEntry = {
       id: Date.now().toString(),
       date: `${months[now.getMonth()]} ${now.getDate()}`,
@@ -92,15 +104,20 @@ const Index = () => {
     setTranscribedText("");
   };
 
+  const handleDeleteEntry = (id: string) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  };
+
   const handleDayClick = (day: string) => {
-    const matchingEntry = entries.find((e) => e.dayOfWeek === day);
-    if (!matchingEntry) return;
-    setHighlightedEntryId(matchingEntry.id);
-    const el = entryRefs.current[matchingEntry.id];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const matchingEntries = entries.filter((e) => e.dayOfWeek === day);
+    if (matchingEntries.length === 0) return;
+    const ids = matchingEntries.map((e) => e.id);
+    setHighlightedEntryIds(ids);
+    const firstEl = entryRefs.current[ids[0]];
+    if (firstEl) {
+      firstEl.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    setTimeout(() => setHighlightedEntryId(null), 2000);
+    setTimeout(() => setHighlightedEntryIds([]), 2000);
   };
 
   return (
@@ -227,7 +244,7 @@ const Index = () => {
         >
           <h3 className="mb-4 text-lg font-serif text-foreground">This week's mood</h3>
           <div className="rounded-2xl border border-border bg-card p-5">
-            <MoodChart data={MOOD_DATA} onDayClick={handleDayClick} />
+            <MoodChart data={moodData} onDayClick={handleDayClick} />
           </div>
         </motion.section>
 
@@ -248,7 +265,8 @@ const Index = () => {
                 <JournalEntryCard
                   entry={entry}
                   index={i}
-                  highlighted={highlightedEntryId === entry.id}
+                  highlighted={highlightedEntryIds.includes(entry.id)}
+                  onDelete={handleDeleteEntry}
                 />
               </div>
             ))}

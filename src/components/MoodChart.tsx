@@ -1,8 +1,15 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useCallback } from "react";
 
+interface MoodDataPoint {
+  date: string;
+  score: number;
+  label: string;
+  hasEntries?: boolean;
+}
+
 interface MoodChartProps {
-  data: { date: string; score: number; label: string }[];
+  data: MoodDataPoint[];
   onDayClick?: (day: string) => void;
 }
 
@@ -58,12 +65,14 @@ const MoodChart = ({ data, onDayClick }: MoodChartProps) => {
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
-              const d = payload[0].payload;
+              const d = payload[0].payload as MoodDataPoint;
               return (
                 <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-md">
                   <p className="text-xs text-muted-foreground">{d.date}</p>
                   <p className="text-sm font-medium text-foreground">{d.label}</p>
-                  <p className="text-xs text-primary mt-1 cursor-pointer">Click dot to view entry</p>
+                  {d.hasEntries !== false && (
+                    <p className="text-xs text-primary mt-1 cursor-pointer">Click dot to view entry</p>
+                  )}
                 </div>
               );
             }}

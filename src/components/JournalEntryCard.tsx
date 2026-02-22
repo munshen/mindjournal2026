@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Lock, Calendar } from "lucide-react";
+import { Lock, Calendar, Trash2 } from "lucide-react";
 import SentimentBadge, { type Sentiment } from "./SentimentBadge";
 
 export interface JournalEntry {
@@ -17,15 +17,16 @@ interface JournalEntryCardProps {
   entry: JournalEntry;
   index: number;
   highlighted?: boolean;
+  onDelete?: (id: string) => void;
 }
 
-const JournalEntryCard = ({ entry, index, highlighted }: JournalEntryCardProps) => {
+const JournalEntryCard = ({ entry, index, highlighted, onDelete }: JournalEntryCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.3 }}
-      className={`group rounded-xl border p-4 transition-all duration-300 ${
+      className={`group relative rounded-xl border p-4 transition-all duration-300 ${
         highlighted
           ? "border-primary bg-primary/10 shadow-lg ring-2 ring-primary/30"
           : "border-border bg-card hover:shadow-md"
@@ -48,7 +49,16 @@ const JournalEntryCard = ({ entry, index, highlighted }: JournalEntryCardProps) 
           <SentimentBadge sentiment={entry.sentiment} score={entry.score} />
         </div>
       </div>
-      <p className="text-sm leading-relaxed text-foreground/90 line-clamp-3">{entry.text}</p>
+      <p className="text-sm leading-relaxed text-foreground/90 line-clamp-3 pr-8">{entry.text}</p>
+      {onDelete && (
+        <button
+          onClick={() => onDelete(entry.id)}
+          className="absolute bottom-3 right-3 rounded-md p-1.5 text-muted-foreground/50 opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+          aria-label="Delete entry"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
     </motion.div>
   );
 };
