@@ -10,20 +10,26 @@ export interface JournalEntry {
   sentiment: Sentiment;
   score: number;
   encrypted: boolean;
+  dayOfWeek?: string;
 }
 
 interface JournalEntryCardProps {
   entry: JournalEntry;
   index: number;
+  highlighted?: boolean;
 }
 
-const JournalEntryCard = ({ entry, index }: JournalEntryCardProps) => {
+const JournalEntryCard = ({ entry, index, highlighted }: JournalEntryCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.3 }}
-      className="group rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+      className={`group rounded-xl border p-4 transition-all duration-300 ${
+        highlighted
+          ? "border-primary bg-primary/10 shadow-lg ring-2 ring-primary/30"
+          : "border-border bg-card hover:shadow-md"
+      }`}
     >
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

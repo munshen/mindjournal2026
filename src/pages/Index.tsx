@@ -1,18 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Shield, Sparkles } from "lucide-react";
+import { BookOpen, Shield, Sparkles, Smile, Meh, Frown } from "lucide-react";
 import VoiceRecorder from "../components/VoiceRecorder";
 import MoodChart from "../components/MoodChart";
-import MoodSummary from "../components/MoodSummary";
 import JournalEntryCard, { type JournalEntry } from "../components/JournalEntryCard";
 import type { Sentiment } from "../components/SentimentBadge";
 
-const SAMPLE_ENTRIES: JournalEntry[] = [
-  { id: "1", date: "Feb 22", time: "9:15 AM", text: "Woke up feeling really refreshed today. Had a good breakfast and went for a morning walk. The weather was perfect and I felt genuinely grateful for the little things.", sentiment: "positive", score: 0.85, encrypted: true },
-  { id: "2", date: "Feb 21", time: "8:30 PM", text: "Work was a bit stressful today with the deadline approaching. I managed to take a few breaks though, which helped. Need to remember to be kinder to myself during busy periods.", sentiment: "neutral", score: 0.45, encrypted: true },
-  { id: "3", date: "Feb 21", time: "7:00 AM", text: "Didn't sleep well last night, feeling tired and a bit anxious about the presentation today. Trying to focus on breathing exercises.", sentiment: "negative", score: 0.25, encrypted: true },
-  { id: "4", date: "Feb 20", time: "6:45 PM", text: "Great afternoon catching up with an old friend. We laughed so much and it reminded me how important social connections are for my wellbeing.", sentiment: "positive", score: 0.92, encrypted: true },
-  { id: "5", date: "Feb 19", time: "9:00 PM", text: "A quiet day. Nothing particularly good or bad happened. Spent time reading and doing laundry. Sometimes ordinary days are exactly what you need.", sentiment: "neutral", score: 0.5, encrypted: true },
+const INITIAL_ENTRIES: JournalEntry[] = [
+  { id: "1", date: "Feb 22", time: "9:15 AM", text: "Woke up feeling really refreshed today. Had a good breakfast and went for a morning walk. The weather was perfect and I felt genuinely grateful for the little things.", sentiment: "positive", score: 0.85, encrypted: true, dayOfWeek: "Sat" },
+  { id: "2", date: "Feb 21", time: "8:30 PM", text: "Work was a bit stressful today with the deadline approaching. I managed to take a few breaks though, which helped. Need to remember to be kinder to myself during busy periods.", sentiment: "neutral", score: 0.45, encrypted: true, dayOfWeek: "Fri" },
+  { id: "3", date: "Feb 21", time: "7:00 AM", text: "Didn't sleep well last night, feeling tired and a bit anxious about the presentation today. Trying to focus on breathing exercises.", sentiment: "negative", score: 0.25, encrypted: true, dayOfWeek: "Fri" },
+  { id: "4", date: "Feb 20", time: "6:45 PM", text: "Great afternoon catching up with an old friend. We laughed so much and it reminded me how important social connections are for my wellbeing.", sentiment: "positive", score: 0.92, encrypted: true, dayOfWeek: "Thu" },
+  { id: "5", date: "Feb 19", time: "9:00 PM", text: "A quiet day. Nothing particularly good or bad happened. Spent time reading and doing laundry. Sometimes ordinary days are exactly what you need.", sentiment: "neutral", score: 0.5, encrypted: true, dayOfWeek: "Wed" },
 ];
 
 const MOOD_DATA = [
@@ -25,11 +24,24 @@ const MOOD_DATA = [
   { date: "Sun", score: 0.9, label: "Very positive" },
 ];
 
+type MoodSelection = "positive" | "neutral" | "negative";
+
+const MOOD_OPTIONS: { value: MoodSelection; icon: typeof Smile; label: string }[] = [
+  { value: "positive", icon: Smile, label: "😊" },
+  { value: "neutral", icon: Meh, label: "😐" },
+  { value: "negative", icon: Frown, label: "😔" },
+];
+
 const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [transcribing, setTranscribing] = useState(false);
   const [transcribedText, setTranscribedText] = useState("");
+  const [selectedMood, setSelectedMood] = useState<MoodSelection | null>(null);
+  const [entries, setEntries] = useState<JournalEntry[]>(INITIAL_ENTRIES);
+  const [highlightedEntryId, setHighlightedEntryId] = useState<string | null>(null);
+  const entriesSectionRef = useRef<HTMLDivElement>(null);
+  const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -43,7 +55,6 @@ const Index = () => {
     if (isRecording) {
       setIsRecording(false);
       setTranscribing(true);
-      // Simulate transcription
       setTimeout(() => {
         setTranscribedText("Today was a pretty good day overall. I managed to finish the project I've been working on and it felt really satisfying to see it come together.");
         setTranscribing(false);
@@ -55,16 +66,45 @@ const Index = () => {
     }
   }, [isRecording]);
 
-  const sentimentCounts = SAMPLE_ENTRIES.reduce(
-    (acc, e) => {
-      acc[e.sentiment]++;
-      return acc;
-    },
-    { positive: 0, neutral: 0, negative: 0 } as Record<Sentiment, number>
-  );
+  const handleSaveEntry = () => {
+    if (!transcribedText) return;
+    const now = new Date();
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const sentiment: Sentiment = selectedMood || "neutral";
+    const scoreMap: Record<Sentiment, number> = { positive: 0.85, neutral: 0.5, negative: 0.25 };
+    const newEntry: JournalEntry = {
+      id: Date.now().toString(),
+      date: `${months[now.getMonth()]} ${now.getDate()}`,
+      time: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      text: transcribedText,
+      sentiment,
+      score: scoreMap[sentiment],
+      encrypted: true,
+      dayOfWeek: days[now.getDay()],
+    };
+    setEntries((prev) => [newEntry, ...prev]);
+    setTranscribedText("");
+    setSelectedMood(null);
+  };
+
+  const handleDiscard = () => {
+    setTranscribedText("");
+  };
+
+  const handleDayClick = (day: string) => {
+    const matchingEntry = entries.find((e) => e.dayOfWeek === day);
+    if (!matchingEntry) return;
+    setHighlightedEntryId(matchingEntry.id);
+    const el = entryRefs.current[matchingEntry.id];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    setTimeout(() => setHighlightedEntryId(null), 2000);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-accent via-background to-primary/10">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
@@ -86,10 +126,32 @@ const Index = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-4"
         >
           <h2 className="text-3xl font-serif text-foreground">Good morning ☀️</h2>
           <p className="mt-1 text-muted-foreground">How are you feeling today?</p>
+        </motion.div>
+
+        {/* Mood Picker */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-8 flex gap-3"
+        >
+          {MOOD_OPTIONS.map((mood) => (
+            <button
+              key={mood.value}
+              onClick={() => setSelectedMood(mood.value)}
+              className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-all ${
+                selectedMood === mood.value
+                  ? "border-primary bg-primary/15 text-primary scale-105 shadow-sm"
+                  : "border-border bg-card text-muted-foreground hover:bg-card/80"
+              }`}
+            >
+              <span className="text-lg">{mood.label}</span>
+            </button>
+          ))}
         </motion.div>
 
         {/* Voice Recording Section */}
@@ -138,10 +200,16 @@ const Index = () => {
                 <p className="mb-2 text-xs font-medium text-muted-foreground">Transcribed text</p>
                 <p className="text-sm leading-relaxed text-foreground">{transcribedText}</p>
                 <div className="mt-3 flex gap-2">
-                  <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+                  <button
+                    onClick={handleSaveEntry}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
                     Save entry
                   </button>
-                  <button className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80">
+                  <button
+                    onClick={handleDiscard}
+                    className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80"
+                  >
                     Discard
                   </button>
                 </div>
@@ -159,36 +227,30 @@ const Index = () => {
         >
           <h3 className="mb-4 text-lg font-serif text-foreground">This week's mood</h3>
           <div className="rounded-2xl border border-border bg-card p-5">
-            <MoodChart data={MOOD_DATA} />
+            <MoodChart data={MOOD_DATA} onDayClick={handleDayClick} />
           </div>
-        </motion.section>
-
-        {/* Summary Stats */}
-        <motion.section
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <h3 className="mb-4 text-lg font-serif text-foreground">Your insights</h3>
-          <MoodSummary
-            positive={sentimentCounts.positive}
-            neutral={sentimentCounts.neutral}
-            negative={sentimentCounts.negative}
-            streak={7}
-          />
         </motion.section>
 
         {/* Journal Entries */}
         <motion.section
+          ref={entriesSectionRef}
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.3 }}
         >
           <h3 className="mb-4 text-lg font-serif text-foreground">Recent entries</h3>
           <div className="space-y-3">
-            {SAMPLE_ENTRIES.map((entry, i) => (
-              <JournalEntryCard key={entry.id} entry={entry} index={i} />
+            {entries.map((entry, i) => (
+              <div
+                key={entry.id}
+                ref={(el) => { entryRefs.current[entry.id] = el; }}
+              >
+                <JournalEntryCard
+                  entry={entry}
+                  index={i}
+                  highlighted={highlightedEntryId === entry.id}
+                />
+              </div>
             ))}
           </div>
         </motion.section>
