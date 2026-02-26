@@ -71,22 +71,24 @@ AI converts raw voice journaling into actionable emotional insights.
 6. Mood trend graph updates dynamically  
 
 ## 🔄 Architecture Flow Diagram
-
+The following diagram illustrates the end-to-end emotional analysis pipeline:
 ```
-User Voice Input (Web App)
+User Voice Input (Web Application)
         ↓
-Speech-to-Text (Voice → Text)
+Google Speech-to-Text API
+(Voice → Transcribed Text)
         ↓
-Transcribed Journal Text
+Transcribed Journal Entry
         ↓
 Google Gemini API
-(Emotion Analysis + Sentiment + Summary)
+(Emotion Analysis • Sentiment Score • AI Summary)
         ↓
-Backend Processing (Node / App Logic)
+Backend Processing (Application Logic)
         ↓
-Cloud Firestore (Secure Storage)
+Cloud Firestore
+(Secure Journal Storage)
         ↓
-Mood Trend Graph Update (Frontend Visualization)
+Mood Trend Visualization (Frontend Dashboard)
 ```
 
 ---
