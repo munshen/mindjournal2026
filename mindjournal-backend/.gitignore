@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Secrets and API Keys
+.env
+google-credentials.json
+
+# OS generated files
+.DS_Store
