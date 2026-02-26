@@ -136,3 +136,37 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 npm install
 npm run dev
+
+---
+
+## 🧩 Technologies Used
+
+- React  
+- TypeScript  
+- Vite  
+- Tailwind CSS  
+- shadcn-ui  
+- Google Gemini API  
+- Google Speech-to-Text  
+- Cloud Firestore  
+
+---
+
+## 📊 Impact
+
+MindVoice improves emotional self-awareness by:
+
+- Encouraging consistent reflection  
+- Identifying emotional trends over time  
+- Providing AI-assisted emotional interpretation  
+- Supporting early detection of stress or burnout  
+
+---
+
+## 🔮 Future Improvements
+
+- Weekly AI emotional reports  
+- Advanced emotion classification (stress / burnout detection)  
+- Therapist and mental health support integration  
+- Full encrypted storage via Cloud KMS  
+- Large-scale emotional trend analytics  
