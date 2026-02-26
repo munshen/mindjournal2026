@@ -136,7 +136,7 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 npm install
 npm run dev
-
+```
 ---
 
 ## 🧩 Technologies Used
