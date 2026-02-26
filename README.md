@@ -261,4 +261,4 @@ MindVoice is designed to scale using Google Cloud infrastructure:
 ---
 ## 📄 Project Presentation
 
-Slides: [GoogleSlide link]((https://docs.google.com/presentation/d/1IoJqTIStDfLeRltd5Q5eFDduGu81BESPVdJ5d2a8MkU/edit?usp=sharing))
+Slides: ([GoogleSlide link](https://docs.google.com/presentation/d/1IoJqTIStDfLeRltd5Q5eFDduGu81BESPVdJ5d2a8MkU/edit?usp=sharing))
