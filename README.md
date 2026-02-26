@@ -25,7 +25,7 @@ MindJournal promotes proactive emotional awareness, early stress detection, and 
 - 🎤 Real-time voice journaling  
 - 📝 Google Speech-to-Text transcription  
 - 🤖 AI-powered emotional analysis using Google Gemini  
-- 📊 Sentiment scoring (-1 to +1)  
+- 📊 Sentiment scoring in percentage (%)  
 - 🧠 Dominant emotion detection (e.g., Distress, Calm, Positive, Anxious)  
 - 📈 Dynamic mood trend visualization  
 - ☁️ Secure journal storage using Cloud Firestore  
