@@ -91,8 +91,6 @@ Mood Trend Graph Update (Frontend Visualization)
 
 ---
 
----
-
 ## 🧠 AI Emotional Output
 
 Each journal entry generates:
