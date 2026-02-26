@@ -70,6 +70,27 @@ AI converts raw voice journaling into actionable emotional insights.
 5. Journal data stored securely in Cloud Firestore  
 6. Mood trend graph updates dynamically  
 
+## 🔄 Architecture Flow Diagram
+
+```
+User Voice Input (Web App)
+        ↓
+Speech-to-Text (Voice → Text)
+        ↓
+Transcribed Journal Text
+        ↓
+Google Gemini API
+(Emotion Analysis + Sentiment + Summary)
+        ↓
+Backend Processing (Node / App Logic)
+        ↓
+Cloud Firestore (Secure Storage)
+        ↓
+Mood Trend Graph Update (Frontend Visualization)
+```
+
+---
+
 ---
 
 ## 🧠 AI Emotional Output
