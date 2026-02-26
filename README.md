@@ -97,7 +97,7 @@ Mood Trend Visualization (Frontend Dashboard)
 
 Each journal entry generates:
 
-- **Sentiment Score**: -1 (negative) to +1 (positive)  
+- **Sentiment Score**: 0% to 100% (negative/positive)  
 - **Dominant Emotion**: e.g., Distress, Calm, Positive, Anxious  
 - **AI Summary**: Short explanation of emotional state  
 
