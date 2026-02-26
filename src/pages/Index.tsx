@@ -42,6 +42,8 @@ const Index = () => {
   const [highlightedEntryIds, setHighlightedEntryIds] = useState<string[]>([]);
   const entriesSectionRef = useRef<HTMLDivElement>(null);
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const moodData = useMemo(() => {
     return DAYS_ORDER.map((day) => {
@@ -63,18 +65,70 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  const handleToggleRecording = useCallback(() => {
+  const handleToggleRecording = useCallback(async () => {
+    // STOP RECORDING LOGIC
     if (isRecording) {
-      setIsRecording(false);
-      setTranscribing(true);
-      setTimeout(() => {
-        setTranscribedText("Today was a pretty good day overall. I managed to finish the project I've been working on and it felt really satisfying to see it come together.");
-        setTranscribing(false);
-      }, 2000);
-    } else {
-      setDuration(0);
-      setTranscribedText("");
-      setIsRecording(true);
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.onstop = async () => {
+          setTranscribing(true);
+          // Combine audio chunks into a single WebM blob
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          
+          // Prepare the data to send to the backend
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'journal-entry.webm');
+
+          try {
+            const response = await fetch('http://localhost:5000/api/journal/voice', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (!response.ok) throw new Error("Backend processing failed");
+            
+            const data = await response.json();
+            
+            // Update UI with real data!
+            setTranscribedText(data.transcript);
+            setSelectedMood(data.analysis.uiMood as MoodSelection); // Automatically selects the mood button!
+            
+          } catch (error) {
+            console.error("Error processing audio:", error);
+            setTranscribedText("Sorry, there was an error processing your audio. Please try again.");
+          } finally {
+            setTranscribing(false);
+            // Turn off the microphone completely
+            mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
+          }
+        };
+        
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+      }
+    } 
+    // START RECORDING LOGIC
+    else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        setDuration(0);
+        setTranscribedText("");
+        setSelectedMood(null);
+      } catch (error) {
+        console.error("Error accessing microphone:", error);
+        alert("Please allow microphone access to record your journal.");
+      }
     }
   }, [isRecording]);
 
