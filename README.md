@@ -242,7 +242,7 @@ Privacy-aware emotional data management suitable for real-world deployment.
 ---
 ## 📈 Scalability
 
-MindVoice is designed to scale using Google Cloud infrastructure:
+MindJournal is designed to scale using Google Cloud infrastructure:
 
 - Firestore supports large-scale emotional data storage
 - Gemini API enables scalable AI analysis
