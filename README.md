@@ -1,73 +1,117 @@
-# Welcome to your Lovable project
+# MindVoice — AI Voice Journaling for Emotional Well-being
 
-## Project info
+## 📌 Overview
+MindVoice is a voice-first AI journaling application that enables users to record daily reflections through speech. The system converts voice to text using **Google Speech-to-Text**, analyzes emotional tone using **Google Gemini**, and visualizes emotional trends over time through dynamic mood graphs.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+By combining voice interaction, AI-powered emotional analysis, and secure cloud storage, MindVoice helps users build emotional awareness and monitor their mental well-being consistently.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🎯 Problem Statement
+Many individuals struggle to consistently monitor their mental health. Emotional patterns often go unnoticed until burnout, anxiety, or severe stress occurs. Traditional journaling lacks structured emotional insights and long-term trend visualization.
 
-**Use Lovable**
+MindVoice transforms unstructured voice reflections into meaningful emotional insights using AI-powered analysis and visualization.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🌍 SDG Alignment
+**SDG 3 — Good Health & Well-being**
 
-**Use your preferred IDE**
+MindVoice promotes proactive emotional awareness, early stress detection, and consistent self-reflection to support mental well-being.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## ✨ Key Features
+- 🎤 Real-time voice journaling  
+- 📝 Google Speech-to-Text transcription  
+- 🤖 AI-powered emotional analysis using Google Gemini  
+- 📊 Sentiment scoring (-1 to +1)  
+- 🧠 Dominant emotion detection (e.g., Distress, Calm, Positive, Anxious)  
+- 📈 Dynamic mood trend visualization  
+- ☁️ Secure journal storage using Cloud Firestore  
+- 🔐 Architecture designed for encrypted storage (Cloud KMS-ready)  
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+## 🤖 AI Integration (Google Gemini)
+
+Google Gemini is used to:
+
+- Analyze emotional tone of journal entries  
+- Generate structured sentiment score  
+- Identify dominant emotional state  
+- Produce AI-generated emotional summaries  
+- Support emotional trend tracking over time  
+
+AI converts raw voice journaling into actionable emotional insights.
+
+---
+
+## ☁️ Google Technologies Used
+
+- **Google Gemini API** — Emotional analysis and insights  
+- **Google Speech-to-Text API** — Voice-to-text transcription  
+- **Cloud Firestore** — Secure journal data storage  
+- **Google Cloud Platform (GCP)** — Backend infrastructure  
+- **Cloud KMS (architecture-ready)** — Encryption support  
+- **Firebase Hosting** — Web deployment  
+
+---
+
+## 🏗 System Architecture
+
+1. User records voice journal entry via web interface  
+2. Audio sent to Google Speech-to-Text → converted to text  
+3. Transcribed text sent to Google Gemini API  
+4. Gemini returns:
+   - Sentiment score  
+   - Dominant emotion  
+   - Emotional summary  
+5. Journal data stored securely in Cloud Firestore  
+6. Mood trend graph updates dynamically  
+
+---
+
+## 🧠 AI Emotional Output
+
+Each journal entry generates:
+
+- **Sentiment Score**: -1 (negative) to +1 (positive)  
+- **Dominant Emotion**: e.g., Distress, Calm, Positive, Anxious  
+- **AI Summary**: Short explanation of emotional state  
+
+These insights help users track emotional changes and detect stress patterns over time.
+
+---
+
+## 🔐 Privacy & Security
+
+- Journal entries stored securely in Cloud Firestore  
+- Architecture supports encrypted storage (Cloud KMS)  
+- Sensitive emotional data handled with privacy in mind  
+
+---
+
+## 🚀 Accessing the Application
+
+### Live Demo
+(Insert your Lovable published link here)
+
+---
+
+## 🛠 Editing the Project
+
+### Use Lovable
+Open the project in Lovable:
+https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+
+Changes made in Lovable are automatically synced to this GitHub repository.
+
+### Use Your Own IDE (Optional)
+If working locally:
+
+```bash
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
