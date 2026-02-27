@@ -173,6 +173,19 @@ MindJournal improves emotional self-awareness by:
 - Supporting early detection of stress or burnout
 
 ---
+## 📈 Success Metrics
+
+MindJournal evaluates its effectiveness using measurable indicators:
+
+- 📅 Average journal entries per user per week  
+- 📊 Emotional trend consistency tracking over time  
+- 💬 Percentage of users engaging with AI-generated advice  
+- 🔁 User retention rate after 7 and 30 days  
+- 📉 Reduction in reported stress levels (future evaluation phase)
+
+These metrics help guide product iteration, scalability decisions, and long-term impact assessment aligned with SDG 3.
+
+---
 
 ## 🔮 Future Improvements
 
