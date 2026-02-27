@@ -105,7 +105,7 @@ Mood Trend Visualization (Frontend Dashboard)
 The following diagram illustrates the full client-server architecture, including frontend, backend API layer, business logic, and data persistence.
 
 ![MindJournal Architecture](./mindjournal-architecture.png)
----
+
 ---
 ## 🧠 AI Emotional Output
 
@@ -270,6 +270,14 @@ MindJournal is designed to scale using Google Cloud infrastructure:
 - Gemini API enables scalable AI analysis
 - Cloud deployment allows multi-user expansion
 - Architecture supports future mobile app integration
+
+---
+
+## 🔮 Product Roadmap
+
+MindJournal follows a phased roadmap to evolve from MVP to a scalable AI-powered mental health ecosystem.
+
+![MindJournal Roadmap](./mindjournal-roadmap.png)
 
 ---
 
