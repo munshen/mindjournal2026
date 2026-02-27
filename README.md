@@ -104,7 +104,7 @@ Mood Trend Visualization (Frontend Dashboard)
 
 The following diagram illustrates the full client-server architecture, including frontend, backend API layer, business logic, and data persistence.
 
-![MindJournal Architecture](./MindJournal Architecture flowchart.png)
+![MindJournal Architecture](./mindjournal-architecture.png)
 ---
 
 ## 🧠 AI Emotional Output
