@@ -36,7 +36,8 @@ const Index = () => {
 
   // 1. Initialize Socket Connection
   useEffect(() => {
-    socketRef.current = io("http://localhost:5000");
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+    socketRef.current = io(backendUrl);
 
     socketRef.current.on("loadHistory", (history: JournalEntry[]) => {
     setEntries(history);
