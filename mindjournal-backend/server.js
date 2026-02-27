@@ -9,41 +9,73 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+
+// Use specific allowed origins instead of wildcard
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+const io = new Server(server, { cors: { origin: ALLOWED_ORIGINS } });
 
 // --- 1. Firestore Setup ---
-const serviceAccount = require('./google-credentials.json');
+// Use environment variable for credentials instead of file path
+const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+  ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON)
+  : (() => { throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON env var is required'); })();
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  // FORCE the ID to the one where you saw the 'entries' collection in the console
   projectId: "mindjournal-26" 
 });
 
 const db = admin.firestore();
-// Force the default database settings
 db.settings({ databaseId: '(default)' });
 
 // --- 2. Google Clients ---
-const speechClient = new speech.SpeechClient({
-    keyFilename: './google-credentials.json' 
-});
+// Use Application Default Credentials or env-based credentials
+const speechClient = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+  ? new speech.SpeechClient({ credentials: serviceAccount })
+  : new speech.SpeechClient();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // --- Helper: Filter Filler Words ---
 const cleanText = (text) => {
-    // Strips common fillers as whole words, case-insensitive, and fixes double spaces
     const fillers = /\b(um|uh|hmm|err|ah)\b/gi;
     return text.replace(fillers, "").replace(/\s\s+/g, ' ').trim();
 };
 
-// --- 3. Live Socket Logic ---
-io.on('connection', (socket) => {
-    console.log('Client connected for live audio');
+// --- Helper: Verify Firebase Auth Token ---
+const verifyAuthToken = async (token) => {
+  if (!token) return null;
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    return decodedToken;
+  } catch (err) {
+    return null;
+  }
+};
 
-    // Load existing entries from Firestore and send to client on connection
-    db.collection('entries').orderBy('timestamp', 'desc').get()
+// --- 3. Socket.IO Authentication Middleware ---
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth?.token;
+  const user = await verifyAuthToken(token);
+  if (!user) {
+    return next(new Error('Authentication required'));
+  }
+  socket.userId = user.uid;
+  next();
+});
+
+// --- 4. Live Socket Logic ---
+io.on('connection', (socket) => {
+    console.log('Authenticated client connected:', socket.userId);
+
+    // Load only this user's entries from Firestore
+    db.collection('entries')
+        .where('userId', '==', socket.userId)
+        .orderBy('timestamp', 'desc')
+        .get()
         .then(snapshot => {
             if (snapshot.empty) {
                 socket.emit('loadHistory', []);
@@ -53,25 +85,51 @@ io.on('connection', (socket) => {
             socket.emit('loadHistory', history);
         })
         .catch(err => {
-            console.error("Firestore Error:", err.message);
-            socket.emit('loadHistory', []); // Send empty array so frontend doesn't hang
+            console.error("Firestore load failed", { code: err.code, userId: socket.userId });
+            socket.emit('loadHistory', []);
         });
 
     let recognizeStream = null;
-    let fullTranscript = ""; // Persistent accumulator for the session
+    let fullTranscript = "";
+    let totalAudioBytes = 0;
+    let streamTimeout = null;
+    const MAX_SESSION_BYTES = 50 * 1024 * 1024; // 50MB max per session
+    const MAX_STREAM_DURATION_MS = 5 * 60 * 1000; // 5 minutes max
 
-    // --- NEW: Delete Functionality ---
+    // --- Delete with ownership verification ---
     socket.on('deleteEntry', async (id) => {
+        if (!id || typeof id !== 'string' || id.length > 128) {
+            socket.emit('error', 'Invalid entry ID');
+            return;
+        }
         try {
+            const doc = await db.collection('entries').doc(id).get();
+            if (!doc.exists || doc.data().userId !== socket.userId) {
+                socket.emit('error', 'Entry not found or unauthorized');
+                return;
+            }
             await db.collection('entries').doc(id).delete();
-            console.log("Deleted entry from Firestore:", id);
+            console.log("Deleted entry:", id);
         } catch (e) {
-            console.error("Delete Error:", e);
+            console.error("Delete failed", { code: e.code });
+            socket.emit('error', 'Failed to delete entry');
         }
     });
 
     socket.on('startStream', (userLanguage = 'en-US') => {
-        fullTranscript = ""; // Reset accumulator for new session
+        fullTranscript = "";
+        totalAudioBytes = 0;
+
+        // Set stream timeout
+        if (streamTimeout) clearTimeout(streamTimeout);
+        streamTimeout = setTimeout(() => {
+            if (recognizeStream) {
+                recognizeStream.end();
+                recognizeStream = null;
+                socket.emit('error', 'Stream duration limit exceeded');
+            }
+        }, MAX_STREAM_DURATION_MS);
+
         recognizeStream = speechClient
             .streamingRecognize({
                 config: {
@@ -84,7 +142,7 @@ io.on('connection', (socket) => {
                 },
             })
             .on('error', (err) => {
-                console.error('STT Error:', err);
+                console.error('STT stream error', { code: err.code });
                 if (recognizeStream) {
                     recognizeStream.destroy();
                     recognizeStream = null;
@@ -96,14 +154,12 @@ io.on('connection', (socket) => {
                     const transcript = result.alternatives[0].transcript;
                     
                     if (result.isFinal) {
-                        // Append the finished segment to our global transcript
                         fullTranscript += transcript + " ";
                         socket.emit('transcriptUpdate', {
                             text: fullTranscript.trim(),
                             isFinal: true
                         });
                     } else {
-                        // Show the history plus the current live guess
                         socket.emit('transcriptUpdate', {
                             text: (fullTranscript + transcript).trim(),
                             isFinal: false
@@ -114,31 +170,51 @@ io.on('connection', (socket) => {
     });
 
     socket.on('audioData', (chunk) => {
+        // Validate chunk is a buffer and within size limits
+        if (!chunk || !(chunk instanceof Buffer || chunk instanceof ArrayBuffer || ArrayBuffer.isView(chunk))) {
+            return;
+        }
+        const chunkSize = chunk.byteLength || chunk.length;
+        if (chunkSize > 65536) { // Max 64KB per chunk
+            socket.emit('error', 'Audio chunk too large');
+            return;
+        }
+        totalAudioBytes += chunkSize;
+        if (totalAudioBytes > MAX_SESSION_BYTES) {
+            socket.emit('error', 'Session size limit exceeded');
+            if (recognizeStream) {
+                recognizeStream.end();
+                recognizeStream = null;
+            }
+            return;
+        }
         if (recognizeStream && recognizeStream.writable) {
             recognizeStream.write(chunk);
         }
     });
 
     socket.on('stopStream', async () => {
+        if (streamTimeout) {
+            clearTimeout(streamTimeout);
+            streamTimeout = null;
+        }
         if (recognizeStream) {
             recognizeStream.end();
             recognizeStream = null;
         }
         
-        // --- CLEAN THE TEXT BEFORE SAVING OR ANALYZING ---
         const finalText = cleanText(fullTranscript);
         if (!finalText) return;
 
         try {
-            // --- 4. Gemini Analysis ---
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `
                 You are a deeply empathetic and supportive best friend/journaling companion. 
                 Analyze the emotional tone of this entry: "${finalText}"
                 
                 TONE & ADVICE RULES:
-                - If the user is SAD or STRESSED: Offer a gentle, human comforting sentence (e.g., "I'm so sorry you had to deal with that today; remember that it's okay to feel this way.") and one small piece of actionable, warm advice (e.g., "Maybe a 5-minute walk or a cup of tea might help clear your head? Remember, I will always be by your side ;)").
-                - If the user is HAPPY or SUCCESSFUL: Be genuinely enthusiastic! (e.g., "Wow, that is genuinely amazing! I'm so proud of you for hitting that milestone. Good job mate!")
+                - If the user is SAD or STRESSED: Offer a gentle, human comforting sentence and one small piece of actionable, warm advice.
+                - If the user is HAPPY or SUCCESSFUL: Be genuinely enthusiastic!
                 
                 SCORING RULES:
                 - "sentiment": "positive", "neutral", or "negative".
@@ -157,13 +233,13 @@ io.on('connection', (socket) => {
             const result = await model.generateContent(prompt);
             const responseText = result.response.text();
             
-            // Robust JSON cleaning using regex to find content between curly braces
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             const cleanJson = jsonMatch ? jsonMatch[0] : responseText;
             const analysis = JSON.parse(cleanJson);
 
-            // --- 5. Save to Firestore ---
+            // Save with user ID for data isolation
             const entry = {
+                userId: socket.userId,
                 text: finalText,
                 ...analysis,
                 timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -174,20 +250,27 @@ io.on('connection', (socket) => {
 
             const docRef = await db.collection('entries').add(entry);
             
-            // Send complete entry back to frontend
             socket.emit('saveComplete', { id: docRef.id, ...entry });
-            console.log("Entry saved to Firestore:", docRef.id);
+            console.log("Entry saved:", docRef.id);
 
         } catch (e) { 
-            console.error("Analysis/Save Error:", e);
+            console.error("Analysis/save failed", { code: e.code });
             socket.emit('error', 'Failed to analyze or save entry');
+        }
+    });
+
+    socket.on('disconnect', () => {
+        if (streamTimeout) clearTimeout(streamTimeout);
+        if (recognizeStream) {
+            recognizeStream.destroy();
+            recognizeStream = null;
         }
     });
 });
 
-// Global error handler to prevent server crashes
+// Global error handler
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+    console.error('Uncaught exception', { message: err.message, code: err.code });
 });
 
 const PORT = process.env.PORT || 5000;
