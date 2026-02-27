@@ -39,7 +39,8 @@ MindJournal promotes proactive emotional awareness, early stress detection, and 
 
 ---
 
-## 🤖 AI Integration (Google Gemini)
+## ⚙️ Implementation Details
+🤖 AI Integration (Google Gemini)
 
 Google Gemini is used to:
 
