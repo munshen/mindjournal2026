@@ -1,3 +1,4 @@
+//index.tsx
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Shield, Sparkles, Brain, CheckCircle2 } from "lucide-react";
@@ -117,12 +118,29 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isRecording]);
 
+  // --- Updated Mood Trend Calculation with High Sensitivity ---
   const moodData = useMemo(() => {
     return DAYS_ORDER.map((day) => {
       const dayEntries = entries.filter((e) => e.dayOfWeek === day);
-      if (dayEntries.length === 0) return { date: day, score: 0, label: "No record", hasEntries: false };
-      const avgScore = dayEntries.reduce((sum, e) => sum + (e.score - 0.5) * 2, 0) / dayEntries.length;
-      return { date: day, score: avgScore, label: getMoodLabel(avgScore + 0.5), hasEntries: true };
+      
+      if (dayEntries.length === 0) return { date: day, score: 0.5, hasEntries: false };
+      
+      // Calculate average
+      const avgScore = dayEntries.reduce((sum, e) => sum + e.score, 0) / dayEntries.length;
+
+      // FIX: If the score is negative (below 0.5), we "stretch" it 
+      // so it sits lower on the graph and doesn't look neutral.
+      let displayScore = avgScore;
+      if (avgScore < 0.5) {
+        displayScore = avgScore * 0.6; // This pushes the line further down
+      }
+
+      return { 
+        date: day, 
+        score: displayScore, 
+        label: getMoodLabel(avgScore), 
+        hasEntries: true 
+      };
     });
   }, [entries]);
 
@@ -199,7 +217,11 @@ const Index = () => {
 
             {/* AI Result Card (Replaces Manual Mood Buttons) */}
             {aiAnalysis && !isAnalyzing && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-6 p-6 rounded-xl bg-primary/5 border border-primary/20 shadow-inner">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                className="mt-6 p-6 rounded-xl bg-primary/5 border border-primary/20 shadow-inner"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -207,12 +229,23 @@ const Index = () => {
                   </div>
                   <SentimentBadge sentiment={aiAnalysis.sentiment} />
                 </div>
+                
                 <div className="space-y-3">
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs font-bold text-muted-foreground uppercase">Dominant Emotion:</span>
                     <span className="text-sm font-medium text-primary capitalize">{aiAnalysis.emotion}</span>
                   </div>
+                  
+                  {/* This is your humanized summary/response */}
                   <p className="text-sm italic text-foreground leading-relaxed">"{aiAnalysis.summary}"</p>
+                  
+                  {/* NEW: Actionable/Comforting Advice Section */}
+                  {aiAnalysis.advice && (
+                    <div className="mt-4 p-3 bg-primary/10 rounded-lg border-l-4 border-primary">
+                      <p className="text-xs font-bold text-primary uppercase mb-1">A little thought for you:</p>
+                      <p className="text-sm text-foreground italic">{aiAnalysis.advice}</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

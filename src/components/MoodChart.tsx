@@ -4,7 +4,7 @@ import { useCallback } from "react";
 interface MoodDataPoint {
   date: string;
   score: number;
-  label: string;
+  label?: string;
   hasEntries?: boolean;
 }
 
@@ -41,7 +41,8 @@ const MoodChart = ({ data, onDayClick }: MoodChartProps) => {
   return (
     <div className="h-48 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+        {/* Adjusted left margin to make room for emojis */}
+        <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="hsl(152, 35%, 45%)" stopOpacity={0.3} />
@@ -55,12 +56,15 @@ const MoodChart = ({ data, onDayClick }: MoodChartProps) => {
             tickLine={false}
           />
           <YAxis
-            domain={[-1, 1]}
-            ticks={[-1, 0, 1]}
-            tickFormatter={(v) => (v === 1 ? "😊" : v === 0 ? "😐" : "😔")}
-            tick={{ fontSize: 14 }}
+            /* FIX 1: Domain is now 0 to 1 to match AI scores */
+            domain={[0, 1]}
+            /* FIX 2: Ticks set at the Bottom, Middle, and Top of the 0-1 range */
+            ticks={[0, 0.5, 1]}
+            tickFormatter={(v) => (v === 1 ? "😊" : v === 0.5 ? "😐" : "😔")}
+            tick={{ fontSize: 16 }}
             axisLine={false}
             tickLine={false}
+            width={30}
           />
           <Tooltip
             content={({ active, payload }) => {
@@ -71,7 +75,7 @@ const MoodChart = ({ data, onDayClick }: MoodChartProps) => {
                   <p className="text-xs text-muted-foreground">{d.date}</p>
                   <p className="text-sm font-medium text-foreground">{d.label}</p>
                   {d.hasEntries !== false && (
-                    <p className="text-xs text-primary mt-1 cursor-pointer">Click dot to view entry</p>
+                    <p className="text-xs text-primary mt-1">Click dot to view entry</p>
                   )}
                 </div>
               );

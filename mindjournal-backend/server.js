@@ -1,3 +1,4 @@
+//server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -69,15 +70,17 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('startStream', () => {
+    socket.on('startStream', (userLanguage = 'en-US') => {
         fullTranscript = ""; // Reset accumulator for new session
         recognizeStream = speechClient
             .streamingRecognize({
                 config: {
                     encoding: 'LINEAR16',
                     sampleRateHertz: 16000,
-                    languageCode: 'en-US',
+                    languageCode: userLanguage,
+                    alternativeLanguageCodes: ['ms-MY', 'zh-CN', 'zh-HK', 'en-US'],
                     interimResults: true,
+                    enableAutomaticPunctuation: true,
                 },
             })
             .on('error', (err) => {
@@ -130,15 +133,25 @@ io.on('connection', (socket) => {
             // --- 4. Gemini Analysis ---
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `
-                Analyze the emotional tone of this journal entry.
-                Return ONLY a raw JSON object with no markdown formatting:
+                You are a deeply empathetic and supportive best friend/journaling companion. 
+                Analyze the emotional tone of this entry: "${finalText}"
+                
+                TONE & ADVICE RULES:
+                - If the user is SAD or STRESSED: Offer a gentle, human comforting sentence (e.g., "I'm so sorry you had to deal with that today; remember that it's okay to feel this way.") and one small piece of actionable, warm advice (e.g., "Maybe a 5-minute walk or a cup of tea might help clear your head? Remember, I will always be by your side ;)").
+                - If the user is HAPPY or SUCCESSFUL: Be genuinely enthusiastic! (e.g., "Wow, that is genuinely amazing! I'm so proud of you for hitting that milestone. Good job mate!")
+                
+                SCORING RULES:
+                - "sentiment": "positive", "neutral", or "negative".
+                - "score": 0.0 (Painful) to 1.0 (Joyful). 
+                
+                Return ONLY JSON:
                 {
-                  "sentiment": "positive" | "neutral" | "negative",
-                  "score": 0.0 to 1.0,
-                  "emotion": "one word describing dominant state",
-                  "summary": "one compassionate sentence"
+                "sentiment": "string",
+                "score": number,
+                "emotion": "one word",
+                "summary": "Your warm, human response here",
+                "advice": "A short, caring suggestion based on their mood"
                 }
-                Entry: "${finalText}"
             `;
 
             const result = await model.generateContent(prompt);
@@ -177,4 +190,5 @@ process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });
 
-server.listen(5000, () => console.log('Live streaming server on port 5000'));
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
