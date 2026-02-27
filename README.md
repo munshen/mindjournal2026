@@ -106,7 +106,7 @@ The following diagram illustrates the full client-server architecture, including
 
 ![MindJournal Architecture](./mindjournal-architecture.png)
 ---
-
+---
 ## 🧠 AI Emotional Output
 
 Each journal entry generates:
