@@ -229,10 +229,12 @@ Then create `.env` with the following contents:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"your-project-id",...}
+PROJECTID=your_firebase_project_id_here
 ```
 
 - Replace `your_gemini_api_key_here` with the key from **Step 4**
 - Replace the JSON value with the single-line output from **Step 3d**
+- Replace `your_firebase_project_id_here` with the project ID from **Firebase Console → Project Settings → General**
 
 > ⚠️ **Never share or commit your `.env` file. Make sure `.env` is listed in your `.gitignore`.**
 
@@ -287,7 +289,7 @@ These are the parts of the project that are unique to each user and **cannot be 
 |---|---|
 | `mindjournal-backend/.env` | `GEMINI_API_KEY` — your own Gemini key |
 | `mindjournal-backend/.env` | `GOOGLE_SERVICE_ACCOUNT_JSON` — your own Firebase service account |
-| `mindjournal-backend/.env` | `PROJECTID` — your own Firebase project ID |  (You can find your project ID in **Firebase Console → Project Settings → General**.)
+| `mindjournal-backend/.env` | `PROJECTID` — your own Firebase project ID | 
 
 Everything else in the code is generic and does not need to be changed for local development.
 
