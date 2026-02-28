@@ -130,14 +130,6 @@ These insights help users track emotional changes and detect stress patterns ove
 ---
 
 ## 🛠 Editing the Project
-
-### Use Lovable
-
-Open the project (published version) in Lovable:
-[https://mindjournal2026.lovable.app](https://mindjournal2026.lovable.app)
-
-Changes made in Lovable are automatically synced to this GitHub repository.
-
 ### Use Your Own IDE (Optional)
 
 If working locally:
@@ -296,14 +288,9 @@ MindJournal follows a phased roadmap to evolve from MVP to a scalable AI-powered
 ---
 
 ## 🚀 Accessing the Application
-
-### Live Demo
-
-(Insert your Lovable published link here)
-
 ### Demo Video
 
-(YouTube link)
+Video: ([Youtube link](https://youtu.be/QFSEXQoZFm8))
 
 ---
 
