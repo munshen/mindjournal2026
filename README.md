@@ -35,7 +35,6 @@ MindJournal promotes proactive emotional awareness, early stress detection, and 
 - 💬 AI-generated personalized emotional advice
 - 📈 Dynamic mood trend visualization
 - ☁️ Secure journal storage using Cloud Firestore
-- 🔐 Architecture designed for encrypted storage (Cloud KMS-ready)
 
 ---
 
@@ -61,8 +60,7 @@ AI converts raw voice journaling into actionable emotional insights.
 - **Google Speech-to-Text API** — Voice-to-text transcription
 - **Cloud Firestore** — Secure journal data storage
 - **Google Cloud Platform (GCP)** — Backend infrastructure
-- **Cloud KMS (architecture-ready)** — Encryption support
-- **Firebase Hosting** — Web deployment
+
 
 ---
 
@@ -124,7 +122,6 @@ These insights help users track emotional changes and detect stress patterns ove
 ## 🔐 Privacy & Security
 
 - Journal entries stored securely in Cloud Firestore
-- Architecture supports encrypted storage (Cloud KMS)
 - Sensitive emotional data handled with privacy in mind
 
 ---
