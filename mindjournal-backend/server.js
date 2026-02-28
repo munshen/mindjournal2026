@@ -25,7 +25,7 @@ const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: "mindjournal-26" 
+  projectId: process.env.PROJECTID
 });
 
 const db = admin.firestore();
