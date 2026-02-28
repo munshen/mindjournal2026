@@ -454,7 +454,7 @@ MindJournal follows a phased roadmap to evolve from MVP to a scalable AI-powered
 ## 🚀 Accessing the Application
 ### Demo Video
 
-Video: ([Youtube link](https://youtu.be/QFSEXQoZFm8))
+Video: ([Youtube link](https://youtu.be/BeAKmIisLhs)))
 
 ---
 
