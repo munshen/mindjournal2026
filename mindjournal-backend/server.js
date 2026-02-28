@@ -13,7 +13,7 @@ const server = http.createServer(app);
 // Use specific allowed origins instead of wildcard
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'];
 
 const io = new Server(server, { cors: { origin: ALLOWED_ORIGINS } });
 
@@ -30,6 +30,9 @@ admin.initializeApp({
 
 const db = admin.firestore();
 db.settings({ databaseId: '(default)' });
+db.collection('test').get()
+  .then(() => console.log("🔥 Firestore Connection: SUCCESS"))
+  .catch((err) => console.error("❌ Firestore Connection: FAILED", err.message));
 
 // --- 2. Google Clients ---
 // Use Application Default Credentials or env-based credentials
@@ -58,13 +61,15 @@ const verifyAuthToken = async (token) => {
 
 // --- 3. Socket.IO Authentication Middleware ---
 io.use(async (socket, next) => {
-  const token = socket.handshake.auth?.token;
-  const user = await verifyAuthToken(token);
-  if (!user) {
-    return next(new Error('Authentication required'));
-  }
-  socket.userId = user.uid;
+  // TEMP: skip auth for local dev
+  socket.userId = "dev-user";
   next();
+
+  // const token = socket.handshake.auth?.token;
+  // const user = await verifyAuthToken(token);
+  // if (!user) return next(new Error('Authentication required'));
+  // socket.userId = user.uid;
+  // next();
 });
 
 // --- 4. Live Socket Logic ---
@@ -72,8 +77,8 @@ io.on('connection', (socket) => {
     console.log('Authenticated client connected:', socket.userId);
 
     // Load only this user's entries from Firestore
+    // With this temporarily:
     db.collection('entries')
-        .where('userId', '==', socket.userId)
         .orderBy('timestamp', 'desc')
         .get()
         .then(snapshot => {
@@ -91,6 +96,7 @@ io.on('connection', (socket) => {
 
     let recognizeStream = null;
     let fullTranscript = "";
+    let lastInterimTranscript = "";
     let totalAudioBytes = 0;
     let streamTimeout = null;
     const MAX_SESSION_BYTES = 50 * 1024 * 1024; // 50MB max per session
@@ -155,11 +161,13 @@ io.on('connection', (socket) => {
                     
                     if (result.isFinal) {
                         fullTranscript += transcript + " ";
+                        lastInterimTranscript += "";
                         socket.emit('transcriptUpdate', {
                             text: fullTranscript.trim(),
                             isFinal: true
                         });
                     } else {
+                        lastInterimTranscript = transcript;
                         socket.emit('transcriptUpdate', {
                             text: (fullTranscript + transcript).trim(),
                             isFinal: false
@@ -194,24 +202,38 @@ io.on('connection', (socket) => {
     });
 
     socket.on('stopStream', async () => {
+        console.log("🛑 stopStream called, fullTranscript:", fullTranscript);
+        
         if (streamTimeout) {
             clearTimeout(streamTimeout);
             streamTimeout = null;
         }
-        if (recognizeStream) {
-            recognizeStream.end();
-            recognizeStream = null;
-        }
+        await new Promise(resolve => {
+            if (recognizeStream) {
+                recognizeStream.on('end', resolve);
+                recognizeStream.end();
+            } else {
+                resolve();
+            }
+        });
+        recognizeStream = null;
         
-        const finalText = cleanText(fullTranscript);
-        if (!finalText) return;
+            const finalText = cleanText(fullTranscript);
+            console.log("📝 finalText after clean:", finalText); 
+            if (!finalText) {
+                console.log("⚠️ finalText is empty, returning early"); 
+                return;
+            }
 
         try {
+            console.log("🤖 Calling Gemini 2.5 Flash...");
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
             const prompt = `
                 You are a deeply empathetic and supportive best friend/journaling companion. 
                 Analyze the emotional tone of this entry: "${finalText}"
                 
+                IMPORTANT: Detect the language of the entry and respond in that SAME language. If the entry is in Cantonese, reply in Cantonese. If Malay, reply in Malay. Always match the user's language.
+
                 TONE & ADVICE RULES:
                 - If the user is SAD or STRESSED: Offer a gentle, human comforting sentence and one small piece of actionable, warm advice.
                 - If the user is HAPPY or SUCCESSFUL: Be genuinely enthusiastic!
@@ -254,7 +276,7 @@ io.on('connection', (socket) => {
             console.log("Entry saved:", docRef.id);
 
         } catch (e) { 
-            console.error("Analysis/save failed", { code: e.code });
+            console.error("Analysis/save failed", e.message, e);
             socket.emit('error', 'Failed to analyze or save entry');
         }
     });
