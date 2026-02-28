@@ -151,7 +151,7 @@ cd <YOUR_PROJECT_NAME>
 
 ### Step 2: Install Dependencies
 
-### Frontend
+### Frontend (Visual Studio Code or other equivalent IDEs)
 ```bash
 npm install
 ```
@@ -237,20 +237,7 @@ GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"your-project
 > ⚠️ **Never share or commit your `.env` file. Make sure `.env` is listed in your `.gitignore`.**
 
 
-### Step 6: Update the Project ID in server.js
-
-Open `mindjournal-backend/server.js` and find this line:
-
-```js
-admin.initializeApp({
-  projectId: "mindjournal-26"  // Replace with your Firebase project ID
-});
-```
-
-Change `"mindjournal-26"` to your own Firebase project ID. You can find your project ID in **Firebase Console → Project Settings → General**.
-
-
-### Step 7: Enable the Google Speech-to-Text API
+### Step 6: Enable the Google Speech-to-Text API
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
 2. Make sure you're in the correct project (top left dropdown)
@@ -258,7 +245,7 @@ Change `"mindjournal-26"` to your own Firebase project ID. You can find your pro
 4. Search for **Cloud Speech-to-Text API** and click **Enable**
 
 
-### Step 8: Run the Project
+### Step 7: Run the Project
 
 ### Start the Backend
 ```bash
@@ -300,7 +287,7 @@ These are the parts of the project that are unique to each user and **cannot be 
 |---|---|
 | `mindjournal-backend/.env` | `GEMINI_API_KEY` — your own Gemini key |
 | `mindjournal-backend/.env` | `GOOGLE_SERVICE_ACCOUNT_JSON` — your own Firebase service account |
-| `mindjournal-backend/server.js` | `projectId: "mindjournal-26"` — your own Firebase project ID |
+| `mindjournal-backend/.env` | `PROJECTID` — your own Firebase project ID |  (You can find your project ID in **Firebase Console → Project Settings → General**.)
 
 Everything else in the code is generic and does not need to be changed for local development.
 
