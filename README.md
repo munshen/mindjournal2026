@@ -129,16 +129,180 @@ These insights help users track emotional changes and detect stress patterns ove
 
 ---
 
-## 🛠 Editing the Project
-### Use Your Own IDE (Optional)
+## 🛠 Editing the Project on Your Own
 
-If working locally:
+### Prerequisites
+
+Make sure you have these installed before starting:
+
+- [Node.js](https://nodejs.org/) (v18 or above)
+- A [Google Cloud](https://console.cloud.google.com/) account
+- A [Google AI Studio](https://aistudio.google.com/) account (for Gemini API)
+- A [Firebase](https://console.firebase.google.com/) project with Firestore enabled
+
+
+### Step 1: Clone the Project
+
 ```bash
 git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
+```
+
+
+### Step 2: Install Dependencies
+
+### Frontend
+```bash
 npm install
+```
+
+### Backend
+```bash
+cd mindjournal-backend
+npm install
+```
+
+The key packages that must be installed in the backend are:
+
+```bash
+npm install express socket.io @google-cloud/speech @google/generative-ai firebase-admin dotenv
+```
+
+
+## Step 3: Set Up Firebase & Get Your Service Account JSON
+
+### 3a. Create a Firebase Project
+1. Go to [console.firebase.google.com](https://console.firebase.google.com)
+2. Click **Add Project** and follow the steps
+3. Once created, go to **Firestore Database → Create Database**
+4. Choose **Native Mode** and pick a region
+5. Click **Enable**
+
+### 3b. Create a Firestore Index
+The app requires a composite index to query entries. Without it, entries won't load.
+
+1. In Firebase Console, go to **Firestore → Indexes → Composite**
+2. Click **Add Index**
+3. Fill in:
+   - Collection ID: `entries`
+   - Field 1: `userId` — Ascending
+   - Field 2: `timestamp` — Descending
+4. Click **Create** and wait ~1 minute for it to build
+
+### 3c. Download Your Service Account Key
+1. In Firebase Console, click the **gear icon → Project Settings**
+2. Go to the **Service Accounts** tab
+3. Click **Generate new private key** → **Generate Key**
+4. A `.json` file will be downloaded to your computer
+
+### 3d. Convert the JSON to a Single Line (Required for .env)
+Run this command in your terminal, replacing the path with your downloaded file's location:
+
+```bash
+node -e "
+const fs = require('fs');
+const key = JSON.parse(fs.readFileSync('path/to/your-downloaded-key.json', 'utf8'));
+console.log(JSON.stringify(key));
+"
+```
+
+Copy the entire output — this is your `GOOGLE_SERVICE_ACCOUNT_JSON` value.
+
+
+### Step 4: Get Your Gemini API Key
+
+1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+2. Click **Create API Key**
+3. Copy the key
+
+
+## Step 5: Create the .env File
+
+Inside the `mindjournal-backend` folder, create a file called `.env`:
+
+```bash
+cd mindjournal-backend
+```
+
+Then create `.env` with the following contents:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"your-project-id",...}
+```
+
+- Replace `your_gemini_api_key_here` with the key from **Step 4**
+- Replace the JSON value with the single-line output from **Step 3d**
+
+> ⚠️ **Never share or commit your `.env` file. Make sure `.env` is listed in your `.gitignore`.**
+
+
+### Step 6: Update the Project ID in server.js
+
+Open `mindjournal-backend/server.js` and find this line:
+
+```js
+admin.initializeApp({
+  projectId: "mindjournal-26"  // Replace with your Firebase project ID
+});
+```
+
+Change `"mindjournal-26"` to your own Firebase project ID. You can find your project ID in **Firebase Console → Project Settings → General**.
+
+
+### Step 7: Enable the Google Speech-to-Text API
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Make sure you're in the correct project (top left dropdown)
+3. Go to **APIs & Services → Library**
+4. Search for **Cloud Speech-to-Text API** and click **Enable**
+
+
+### Step 8: Run the Project
+
+### Start the Backend
+```bash
+cd mindjournal-backend
+node server.js
+```
+
+You should see:
+```
+Server running on port 5000
+🔥 Firestore Connection: SUCCESS
+```
+
+If you see `❌ Firestore Connection: FAILED`, double-check your `GOOGLE_SERVICE_ACCOUNT_JSON` in `.env`.
+
+### Start the Frontend
+Open a new terminal window (make sure both terminals are active simultaneously):
+```bash
 npm run dev
 ```
+
+The app will be available at `http://localhost:8080` (or whichever port Vite assigns).
+
+## Common Errors & Fixes
+
+| Error | Cause | Fix |
+|---|---|---|
+| `GOOGLE_SERVICE_ACCOUNT_JSON env var is required` | Missing `.env` file or variable | Create `.env` with the correct value |
+| `PERMISSION_DENIED` | Wrong service account or project | Re-download key from the correct Firebase project |
+| `UNAUTHENTICATED` | Private key malformed in `.env` | Re-run the `node -e` command in Step 3d to get a clean single-line JSON |
+| Entries not loading | Missing Firestore composite index | Follow Step 3b to create the index |
+| Transcription works but no entry saved | Stream ends before Google returns final result | Make sure you're using the latest `server.js` with the `await new Promise` fix in `stopStream` |
+
+## User-Specific Parts (Things You Must Change)
+
+These are the parts of the project that are unique to each user and **cannot be shared**:
+
+| Location | What to Change |
+|---|---|
+| `mindjournal-backend/.env` | `GEMINI_API_KEY` — your own Gemini key |
+| `mindjournal-backend/.env` | `GOOGLE_SERVICE_ACCOUNT_JSON` — your own Firebase service account |
+| `mindjournal-backend/server.js` | `projectId: "mindjournal-26"` — your own Firebase project ID |
+
+Everything else in the code is generic and does not need to be changed for local development.
 
 ---
 
